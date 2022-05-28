@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+	// TODO Remove dependency after choosing DB
 	implementation 'org.springframework.boot:spring-boot-starter-data-cassandra-reactive'
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
