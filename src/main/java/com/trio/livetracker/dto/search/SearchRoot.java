@@ -1,7 +1,8 @@
 package com.trio.livetracker.dto.search;
 
-import java.util.ArrayList;
+import lombok.ToString;
 
+import java.util.ArrayList;
 public class SearchRoot {
     public int total_count;
     public boolean incomplete_results;

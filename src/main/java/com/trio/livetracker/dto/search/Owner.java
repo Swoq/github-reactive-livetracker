@@ -1,6 +1,7 @@
 package com.trio.livetracker.dto.search;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.ToString;
 
 public class Owner{
     public String login;

@@ -1,5 +1,7 @@
 package com.trio.livetracker.dto.search;
 
+import lombok.ToString;
+
 public class Repository{
     public int id;
     public String node_id;
