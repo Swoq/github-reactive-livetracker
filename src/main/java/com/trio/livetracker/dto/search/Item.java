@@ -1,14 +1,19 @@
 package com.trio.livetracker.dto.search;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Item{
-    public String name;
-    public String path;
-    public String sha;
-    public String url;
-    public String git_url;
-    public String html_url;
-    public Repository repository;
-    public double score;
+    private String name;
+    private String path;
+    private String sha;
+    private String url;
+    private String git_url;
+    private String html_url;
+    private Repository repository;
+    private double score;
 }

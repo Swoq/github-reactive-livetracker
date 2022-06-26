@@ -1,26 +1,31 @@
 package com.trio.livetracker.dto.search;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Owner{
-    public String login;
-    public int id;
-    public String node_id;
-    public String avatar_url;
-    public String gravatar_id;
-    public String url;
-    public String html_url;
-    public String followers_url;
-    public String following_url;
-    public String gists_url;
-    public String starred_url;
-    public String subscriptions_url;
-    public String organizations_url;
-    public String repos_url;
-    public String events_url;
-    public String received_events_url;
-    public String type;
-    public boolean site_admin;
+    private String login;
+    private int id;
+    private String node_id;
+    private String avatar_url;
+    private String gravatar_id;
+    private String url;
+    private String html_url;
+    private String followers_url;
+    private String following_url;
+    private String gists_url;
+    private String starred_url;
+    private String subscriptions_url;
+    private String organizations_url;
+    private String repos_url;
+    private String events_url;
+    private String received_events_url;
+    private String type;
+    private boolean site_admin;
 }
 

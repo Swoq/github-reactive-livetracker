@@ -1,12 +1,18 @@
 package com.trio.livetracker.dto.events;
 
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class EventRoot {
-    public String id;
-    public String type;
-    public Actor actor;
-    public Repo repo;
-    public Payload payload;
-    public LocalDateTime created_at;
+    private String id;
+    private String type;
+    private Actor actor;
+    private Repo repo;
+    private Payload payload;
+    private LocalDateTime created_at;
 }

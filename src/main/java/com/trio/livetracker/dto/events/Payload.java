@@ -1,13 +1,19 @@
 package com.trio.livetracker.dto.events;
 
-import java.util.ArrayList;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Payload{
-    public Object push_id;
-    public int size;
-    public int distinct_size;
-    public String ref;
-    public String head;
-    public String before;
-    public ArrayList<Commit> commits;
+    private Object push_id;
+    private int size;
+    private int distinct_size;
+    private String ref;
+    private String head;
+    private String before;
+    private ArrayList<Commit> commits;
 }

@@ -31,7 +31,7 @@ public class GithubEventScheduler {
                         .header("Accept", "application/vnd.github.v3+json")
                         .retrieve()
                         .bodyToMono(SearchRoot.class)
-                        .flatMapMany(root -> Flux.fromIterable(root.items))
+                        .flatMapMany(root -> Flux.fromIterable(root.getItems()))
                         .log()
                         .subscribe())
                 .subscribe();
