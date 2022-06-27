@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class DocRepo {
     @Id
-    private String sha;
     private String fullName;
     private List<CodeUpdate> codeUpdates;
+    private List<String> languages;
 }

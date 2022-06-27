@@ -16,6 +16,6 @@ import java.time.LocalDateTime;
 public class CodeUpdate {
     @Id
     private String sha;
-    private String language;
-    private final LocalDateTime timeCreated = LocalDateTime.now();
+    private String keyWord;
+    private LocalDateTime timeCreated = LocalDateTime.now();
 }

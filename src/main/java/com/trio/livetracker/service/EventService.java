@@ -2,33 +2,36 @@ package com.trio.livetracker.service;
 
 import com.trio.livetracker.document.CodeUpdate;
 import com.trio.livetracker.document.DocRepo;
+import com.trio.livetracker.pipeline.MainPipeline;
 import com.trio.livetracker.repository.GithubRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.annotation.PostConstruct;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
 public class EventService {
     private final GithubRepository githubRepository;
+    private final MainPipeline mainPipeline;
 
     public Mono<DocRepo> doSomething() {
-        CodeUpdate codeUpdate = new CodeUpdate("rhdfs", "gachi");
-        DocRepo docRepo = new DocRepo("впы", "gfd", List.of(codeUpdate));
+        CodeUpdate codeUpdate = new CodeUpdate("rhdfs", "keyword",  LocalDateTime.now());
+        DocRepo docRepo = new DocRepo("впы", List.of(codeUpdate),List.of("something"));
         return githubRepository.save(docRepo);
     }
 
-    @PostConstruct
-    private void deleteAll(){
-        githubRepository.deleteAll()
-                .block();
+    public Flux<CodeUpdate> getUpdates(String keyWord) {
+        mainPipeline.addKeyWord(keyWord);
+        return mainPipeline.getMainFlux().filter(d -> d.getKeyWord().equals(keyWord));
+    }
+
+    public Flux<DocRepo> findAll() {
+        return githubRepository.findAll()
+                .log("Find")
+                .filter(p -> p.getFullName().equals("gfd"));
     }
 }
