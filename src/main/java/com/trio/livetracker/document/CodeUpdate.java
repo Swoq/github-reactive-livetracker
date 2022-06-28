@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CodeUpdate {
     @Id
-    private String sha;
+    private String url;
     private String keyWord;
     private LocalDateTime timeCreated = LocalDateTime.now();
 }
