@@ -9,6 +9,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
+
+import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -27,9 +30,11 @@ public class SearchRequest {
                         .build())
                 .header("Authorization", "token " + token)
                 .header("Accept", "application/vnd.github.v3+json")
-                .header("User-Agent","best_person")
+                .header("User-Agent", "alllef")
                 .retrieve()
                 .bodyToMono(SearchRoot.class)
-                .doOnTerminate(()-> log.log(Level.INFO,"Terminated"));
+                .retryWhen(Retry.backoff(2,Duration.ofMinutes(1))
+                        .maxBackoff(Duration.ofMinutes(2)))
+                .doOnTerminate(() -> log.log(Level.INFO, "Terminated"));
     }
 }
