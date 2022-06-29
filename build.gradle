@@ -4,9 +4,6 @@ plugins {
 	id 'java'
 }
 
-group = 'com.trio'
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
 
 configurations {
 	compileOnly {
