@@ -1,10 +1,8 @@
 package com.trio.livetracker.repository;
 
 import com.trio.livetracker.document.DocRepo;
-import com.trio.livetracker.document.LanguagesAnalytic;
 import com.trio.livetracker.document.RepoCountAnalytic;
 import org.springframework.data.mongodb.repository.Aggregation;
-import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
