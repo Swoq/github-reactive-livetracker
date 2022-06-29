@@ -57,15 +57,17 @@ public class MainPipeline {
         return keyWordSink.asFlux()
                 .log("Something from sink")
                 .delayElements(Duration.ofSeconds(10))
-                .map(key -> {
+                .flatMap(key -> {
                             return searchRequest.searchLanguages(key)
                                     .flatMapMany(searchRoot -> Flux.fromIterable(searchRoot.getItems()))
+                                    .concatMap(item -> Mono.just(item).zipWith(githubRepository.findByCodeUpdateId(item.getUrl())))
+                                    .takeWhile(data -> data.getT2() == null)
+                                    .map(Tuple2::getT1)
                                     .flatMap(this::combineData)
                                     .map(d -> processData(key, d))
                                     .flatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1));
                         }
                 )
-                .flatMap(docRepoFlux -> docRepoFlux)
                 .publishOn(schedulers)
                 .publish()
                 .autoConnect();
