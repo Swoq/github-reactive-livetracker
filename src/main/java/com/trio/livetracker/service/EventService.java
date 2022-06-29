@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import javax.print.Doc;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -24,9 +25,9 @@ public class EventService {
         return githubRepository.save(docRepo);
     }
 
-    public Flux<CodeUpdate> getUpdates(String keyWord) {
+    public Flux<DocRepo> getUpdates(String keyWord) {
         mainPipeline.addKeyWord(keyWord);
-        return mainPipeline.getMainFlux().filter(d -> d.getKeyWord().equals(keyWord));
+        return mainPipeline.getMainFlux().filter(d -> d.getCodeUpdates().get(0).getKeyWord().equals(keyWord));
     }
 
     public Flux<DocRepo> findAll() {

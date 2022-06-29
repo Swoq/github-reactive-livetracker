@@ -26,6 +26,6 @@ public class MainController {
 
     @GetMapping(value = "/{keyWord}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> something(@PathVariable String keyWord) {
-       return eventService.getUpdates(keyWord).log("Coming on controller").map(CodeUpdate::toString);
+       return eventService.getUpdates(keyWord).log("Coming on controller").map(DocRepo::toString);
     }
 }
