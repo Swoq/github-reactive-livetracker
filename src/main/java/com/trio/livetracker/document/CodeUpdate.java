@@ -7,12 +7,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 @Document
-@EqualsAndHashCode
-@ToString
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder(toBuilder = true)
 public class CodeUpdate {
     @Id
     private String url;

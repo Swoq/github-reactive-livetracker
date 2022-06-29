@@ -7,11 +7,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.List;
 
 @Document
-@EqualsAndHashCode
-@ToString
-@Getter
-@Setter
-@AllArgsConstructor
+@Data
+@NoArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder(toBuilder = true)
 public class DocRepo {
     @Id
     private String fullName;
