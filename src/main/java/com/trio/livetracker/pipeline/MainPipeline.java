@@ -61,7 +61,8 @@ public class MainPipeline {
                             return searchRequest.searchLanguages(key)
                                     .flatMapMany(searchRoot -> Flux.fromIterable(searchRoot.getItems()))
                                     .flatMap(this::combineData)
-                                    .map(d->processData(key,d));
+                                    .map(d -> processData(key, d))
+                                    .flatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1));
                         }
                 )
                 .flatMap(docRepoFlux -> docRepoFlux)
@@ -73,55 +74,58 @@ public class MainPipeline {
     private Mono<Tuple3<Item, List<String>, DocRepo>> combineData(Item codeUpdateItem) {
         return Mono.zip(Mono.just(codeUpdateItem),
                 searchRequest.searchRepo(codeUpdateItem.getRepository().getLanguages_url()),
-                githubRepository.findById(codeUpdateItem.getRepository().getFull_name()).defaultIfEmpty(new DocRepo()));
+                githubRepository.findById(codeUpdateItem.getRepository().getFull_name())
+                        .defaultIfEmpty(new DocRepo()));
     }
 
-    private CodeUpdateResponse processData(String key, Tuple3<Item, List<String>, DocRepo> data) {
-        DocRepo findedDocRepo = data.getT3();
-        CodeUpdate codeUpdate = CodeUpdate.builder()
+    private Mono<Tuple2<CodeUpdateResponse, DocRepo>> processData(String key, Tuple3<Item, List<String>, DocRepo> data) {
+        var codeUpdate = CodeUpdate.builder()
                 .keyWord(key)
                 .url(data.getT1().getUrl())
                 .build();
 
-        CodeUpdateResponse codeUpdateResponse = CodeUpdateResponse.builder()
-                .repoFullName(data.getT1().getRepository().getFull_name())
-                .codeUpdate(codeUpdate)
-                .isNewRepo(false)
+        var findedDocRepo = DocRepo.builder()
+                .fullName(data.getT1().getRepository().getFull_name())
+                .languages(data.getT2())
+                .codeUpdates(List.of(codeUpdate))
                 .build();
-        if (findedDocRepo == null) {
-            findedDocRepo = DocRepo.builder()
-                    .fullName(data.getT1().getRepository().getFull_name())
-                    .languages(data.getT2())
-                    .codeUpdates(List.of(codeUpdate))
-                    .build();
-            codeUpdateResponse = codeUpdateResponse.toBuilder()
-                    .isNewRepo(false)
-                    .build();
-        } else {
-            List<CodeUpdate> updates = findedDocRepo.getCodeUpdates();
+
+        boolean isNewRepo = true;
+
+        if (data.getT3().getFullName() != null) {
+            var updates = new ArrayList<>(data.getT3().getCodeUpdates());
             updates.add(codeUpdate);
+
             findedDocRepo = findedDocRepo.toBuilder()
                     .languages(data.getT2())
+                    .codeUpdates(updates)
                     .build();
+
+            isNewRepo = false;
         }
-        githubRepository.save(findedDocRepo);
-        return codeUpdateResponse;
+
+        var codeUpdateResponse = CodeUpdateResponse.builder()
+                .repoFullName(data.getT1().getRepository().getFull_name())
+                .codeUpdate(codeUpdate)
+                .isNewRepo(isNewRepo)
+                .build();
+
+        return Mono.just(codeUpdateResponse)
+                .zipWith(githubRepository.save(findedDocRepo));
     }
 
     private DocRepo toDocRepo(String key, Item codeUpdateInfo, List<String> languages) {
         String fullName = codeUpdateInfo.getRepository().getFull_name();
-        CodeUpdate codeUpdate = CodeUpdate.builder()
+        var codeUpdate = CodeUpdate.builder()
                 .keyWord(key)
                 .url(codeUpdateInfo.getUrl())
                 .build();
 
-        DocRepo docRepo = DocRepo.builder()
+        return DocRepo.builder()
                 .fullName(fullName)
                 .codeUpdates(List.of(codeUpdate))
                 .languages(languages)
                 .build();
-
-        return docRepo;
     }
 
     public boolean addKeyWord(String keyWord) {

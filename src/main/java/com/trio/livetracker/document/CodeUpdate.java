@@ -15,5 +15,5 @@ public class CodeUpdate {
     @Id
     private String url;
     private String keyWord;
-    private final LocalDateTime timeCreated = LocalDateTime.now();
+    private LocalDateTime timeCreated = LocalDateTime.now();
 }
