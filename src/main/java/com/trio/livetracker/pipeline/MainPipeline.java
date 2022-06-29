@@ -15,6 +15,7 @@ import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
@@ -60,12 +61,7 @@ public class MainPipeline {
                             return searchRequest.searchLanguages(key)
                                     .flatMapMany(searchRoot -> Flux.fromIterable(searchRoot.getItems()))
                                     .flatMap(this::combineData)
-                                    .map(allData -> toDocRepo(key, allData.getT1(), allData.getT2()))
-                                    .map(docRepo ->CodeUpdateResponse.builder()
-                                            .repoFullName(docRepo.getFullName())
-                                            .codeUpdate(docRepo.getCodeUpdates().get(0))
-                                            .isNewRepo(true)
-                                            .build());
+                                    .map(d->processData(key,d));
                         }
                 )
                 .flatMap(docRepoFlux -> docRepoFlux)
@@ -74,10 +70,42 @@ public class MainPipeline {
                 .autoConnect();
     }
 
-    private Mono<Tuple2<Item, List<String>>> combineData(Item codeUpdateItem) {
-        return Mono.just(codeUpdateItem)
-                .zipWith(searchRequest.searchRepo(codeUpdateItem.getRepository()
-                        .getLanguages_url()));
+    private Mono<Tuple3<Item, List<String>, DocRepo>> combineData(Item codeUpdateItem) {
+        return Mono.zip(Mono.just(codeUpdateItem),
+                searchRequest.searchRepo(codeUpdateItem.getRepository().getLanguages_url()),
+                githubRepository.findById(codeUpdateItem.getRepository().getFull_name()).defaultIfEmpty(new DocRepo()));
+    }
+
+    private CodeUpdateResponse processData(String key, Tuple3<Item, List<String>, DocRepo> data) {
+        DocRepo findedDocRepo = data.getT3();
+        CodeUpdate codeUpdate = CodeUpdate.builder()
+                .keyWord(key)
+                .url(data.getT1().getUrl())
+                .build();
+
+        CodeUpdateResponse codeUpdateResponse = CodeUpdateResponse.builder()
+                .repoFullName(data.getT1().getRepository().getFull_name())
+                .codeUpdate(codeUpdate)
+                .isNewRepo(false)
+                .build();
+        if (findedDocRepo == null) {
+            findedDocRepo = DocRepo.builder()
+                    .fullName(data.getT1().getRepository().getFull_name())
+                    .languages(data.getT2())
+                    .codeUpdates(List.of(codeUpdate))
+                    .build();
+            codeUpdateResponse = codeUpdateResponse.toBuilder()
+                    .isNewRepo(false)
+                    .build();
+        } else {
+            List<CodeUpdate> updates = findedDocRepo.getCodeUpdates();
+            updates.add(codeUpdate);
+            findedDocRepo = findedDocRepo.toBuilder()
+                    .languages(data.getT2())
+                    .build();
+        }
+        githubRepository.save(findedDocRepo);
+        return codeUpdateResponse;
     }
 
     private DocRepo toDocRepo(String key, Item codeUpdateInfo, List<String> languages) {
@@ -97,10 +125,8 @@ public class MainPipeline {
     }
 
     public boolean addKeyWord(String keyWord) {
-        if (!keyWordsSet.contains(keyWord)) {
-            keyWordsSet.add(keyWord);
-            return true;
-        }
+        if (!keyWordsSet.contains(keyWord))
+            return keyWordsSet.add(keyWord);
         return false;
     }
 
