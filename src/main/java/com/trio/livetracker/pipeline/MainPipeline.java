@@ -33,7 +33,6 @@ public class MainPipeline {
     private Sinks.Many<String> keyWordSink;
     private Flux<CodeUpdateResponse> mainFlux;
     private List<String> keyWordsSet;
-    private int currKey;
 
     @PostConstruct
     private void postConstruct() {
@@ -43,16 +42,7 @@ public class MainPipeline {
     }
 
     private Flux<CodeUpdateResponse> createPipeline() {
-        Scheduler schedulers = Schedulers.single();
-        schedulers.createWorker()
-                .schedulePeriodically(() -> {
-                    if (keyWordsSet.size() > 0) {
-                        keyWordSink.emitNext(keyWordsSet.get(currKey), Sinks.EmitFailureHandler.FAIL_FAST);
-                        currKey++;
-                        if (currKey == keyWordsSet.size())
-                            currKey = 0;
-                    }
-                }, 1, 10, TimeUnit.SECONDS);
+        Scheduler schedulers = createWorker();
 
         return keyWordSink.asFlux()
                 .log("Something from sink")
@@ -60,17 +50,36 @@ public class MainPipeline {
                 .flatMap(key -> {
                             return searchRequest.searchLanguages(key)
                                     .flatMapMany(searchRoot -> Flux.fromIterable(searchRoot.getItems()))
-                                    .concatMap(item -> Mono.just(item).zipWith(githubRepository.findByCodeUpdateId(item.getUrl())))
-                                    .takeWhile(data -> data.getT2() == null)
-                                    .map(Tuple2::getT1)
-                                    .flatMap(this::combineData)
+                                    .concatMap(item -> Mono.just(item)
+                                            .zipWith(githubRepository.findByCodeUpdateId(item.getUrl()).defaultIfEmpty(new DocRepo())))
+                                    .takeWhile(data -> {
+                                        System.out.println(data.getT2());
+                                        return data.getT2().getFullName() == null;
+                                    })
+                                    .flatMap(tuple -> combineData(tuple.getT1()))
                                     .map(d -> processData(key, d))
                                     .flatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1));
                         }
                 )
+
                 .publishOn(schedulers)
                 .publish()
                 .autoConnect();
+    }
+
+    private Scheduler createWorker() {
+        Scheduler schedulers = Schedulers.single();
+        final int[] currKey = {0};
+        schedulers.createWorker()
+                .schedulePeriodically(() -> {
+                    if (keyWordsSet.size() > 0) {
+                        keyWordSink.emitNext(keyWordsSet.get(currKey[0]), Sinks.EmitFailureHandler.FAIL_FAST);
+                        currKey[0]++;
+                        if (currKey[0] == keyWordsSet.size())
+                            currKey[0] = 0;
+                    }
+                }, 1, 10, TimeUnit.SECONDS);
+        return schedulers;
     }
 
     private Mono<Tuple3<Item, List<String>, DocRepo>> combineData(Item codeUpdateItem) {
