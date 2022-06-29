@@ -7,15 +7,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 @Document
-@EqualsAndHashCode
-@ToString
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder(toBuilder = true)
 public class CodeUpdate {
     @Id
     private String url;
     private String keyWord;
-    private LocalDateTime timeCreated = LocalDateTime.now();
+    private final LocalDateTime timeCreated = LocalDateTime.now();
 }

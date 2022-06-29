@@ -61,7 +61,11 @@ public class MainPipeline {
                                     .flatMapMany(searchRoot -> Flux.fromIterable(searchRoot.getItems()))
                                     .flatMap(this::combineData)
                                     .map(allData -> toDocRepo(key, allData.getT1(), allData.getT2()))
-                                    .map(docRepo -> new CodeUpdateResponse(docRepo.getFullName(),true,docRepo.getCodeUpdates().get(0)));
+                                    .map(docRepo ->CodeUpdateResponse.builder()
+                                            .repoFullName(docRepo.getFullName())
+                                            .codeUpdate(docRepo.getCodeUpdates().get(0))
+                                            .isNewRepo(true)
+                                            .build());
                         }
                 )
                 .flatMap(docRepoFlux -> docRepoFlux)
@@ -78,15 +82,23 @@ public class MainPipeline {
 
     private DocRepo toDocRepo(String key, Item codeUpdateInfo, List<String> languages) {
         String fullName = codeUpdateInfo.getRepository().getFull_name();
-        CodeUpdate codeUpdate = new CodeUpdate(codeUpdateInfo.getUrl(), key, LocalDateTime.now());
-        DocRepo docRepo = new DocRepo(fullName, List.of(codeUpdate), languages);
+        CodeUpdate codeUpdate = CodeUpdate.builder()
+                .keyWord(key)
+                .url(codeUpdateInfo.getUrl())
+                .build();
+
+        DocRepo docRepo = DocRepo.builder()
+                .fullName(fullName)
+                .codeUpdates(List.of(codeUpdate))
+                .languages(languages)
+                .build();
+
         return docRepo;
     }
 
     public boolean addKeyWord(String keyWord) {
         if (!keyWordsSet.contains(keyWord)) {
             keyWordsSet.add(keyWord);
-            //keyWordSink.emitNext(keyWord, Sinks.EmitFailureHandler.FAIL_FAST);
             return true;
         }
         return false;

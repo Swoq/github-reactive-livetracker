@@ -21,9 +21,10 @@ public class EventService {
     private final MainPipeline mainPipeline;
 
     public Mono<DocRepo> doSomething() {
-        CodeUpdate codeUpdate = new CodeUpdate("rhdfs", "keyword",  LocalDateTime.now());
-        DocRepo docRepo = new DocRepo("впы", List.of(codeUpdate),List.of("something"));
-        return githubRepository.save(docRepo);
+        // CodeUpdate codeUpdate = new CodeUpdate("rhdfs", "keyword",  LocalDateTime.now());
+        //DocRepo docRepo = new DocRepo("впы", List.of(codeUpdate),List.of("something"));
+        // return githubRepository.save(docRepo);
+        return null;
     }
 
     public Flux<CodeUpdateResponse> getUpdates(String keyWord) {
