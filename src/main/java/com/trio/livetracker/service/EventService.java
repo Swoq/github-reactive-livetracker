@@ -2,6 +2,7 @@ package com.trio.livetracker.service;
 
 import com.trio.livetracker.document.CodeUpdate;
 import com.trio.livetracker.document.DocRepo;
+import com.trio.livetracker.dto.response.CodeUpdateResponse;
 import com.trio.livetracker.pipeline.MainPipeline;
 import com.trio.livetracker.repository.GithubRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +26,10 @@ public class EventService {
         return githubRepository.save(docRepo);
     }
 
-    public Flux<DocRepo> getUpdates(String keyWord) {
+    public Flux<CodeUpdateResponse> getUpdates(String keyWord) {
         mainPipeline.addKeyWord(keyWord);
-        return mainPipeline.getMainFlux().filter(d -> d.getCodeUpdates().get(0).getKeyWord().equals(keyWord));
+        return mainPipeline.getMainFlux()
+                .filter(d -> d.getCodeUpdate().getKeyWord().equals(keyWord));
     }
 
     public Flux<DocRepo> findAll() {

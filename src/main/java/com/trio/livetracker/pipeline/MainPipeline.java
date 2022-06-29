@@ -1,6 +1,7 @@
 package com.trio.livetracker.pipeline;
 
 import com.trio.livetracker.document.DocRepo;
+import com.trio.livetracker.dto.response.CodeUpdateResponse;
 import com.trio.livetracker.dto.search.Item;
 import com.trio.livetracker.request.SearchRequest;
 import com.trio.livetracker.document.CodeUpdate;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuple2;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
@@ -28,7 +30,7 @@ public class MainPipeline {
     private final GithubRepository githubRepository;
     private final SearchRequest searchRequest;
     private Sinks.Many<String> keyWordSink;
-    private Flux<DocRepo> mainFlux;
+    private Flux<CodeUpdateResponse> mainFlux;
     private List<String> keyWordsSet;
     private int currKey;
 
@@ -39,7 +41,7 @@ public class MainPipeline {
         mainFlux = createPipeline();
     }
 
-    private Flux<DocRepo> createPipeline() {
+    private Flux<CodeUpdateResponse> createPipeline() {
         Scheduler schedulers = Schedulers.single();
         schedulers.createWorker()
                 .schedulePeriodically(() -> {
@@ -57,23 +59,21 @@ public class MainPipeline {
                 .map(key -> {
                             return searchRequest.searchLanguages(key)
                                     .flatMapMany(searchRoot -> Flux.fromIterable(searchRoot.getItems()))
-                                    .flatMap(item -> Mono.just(item).zipWith(searchRequest.searchRepo(item.getRepository().getLanguages_url())))
-                                    .map(allData -> toDocRepo(key,allData.getT1(),allData.getT2()));
+                                    .flatMap(this::combineData)
+                                    .map(allData -> toDocRepo(key, allData.getT1(), allData.getT2()))
+                                    .map(docRepo -> new CodeUpdateResponse(docRepo.getFullName(),true,docRepo.getCodeUpdates().get(0)));
                         }
                 )
                 .flatMap(docRepoFlux -> docRepoFlux)
                 .publishOn(schedulers)
                 .publish()
                 .autoConnect();
+    }
 
-        //  .flatMap(d -> d.getSecond().flatMapMany(s -> Flux.fromIterable(s.getItems())
-        //        .map(k -> Pair.of(d.getFirst(), k))))
-               /* .flatMap(d -> Mono.just(d.getSecond()).zipWith(d.getSecond().getRepository().getLanguages_url()))
-                .map(item -> new CodeUpdate(item.getSecond().getSha(), item.getFirst(), LocalDateTime.now()))
-                .publishOn(schedulers)
-                .publish()
-                .autoConnect();
-*/
+    private Mono<Tuple2<Item, List<String>>> combineData(Item codeUpdateItem) {
+        return Mono.just(codeUpdateItem)
+                .zipWith(searchRequest.searchRepo(codeUpdateItem.getRepository()
+                        .getLanguages_url()));
     }
 
     private DocRepo toDocRepo(String key, Item codeUpdateInfo, List<String> languages) {
@@ -92,7 +92,7 @@ public class MainPipeline {
         return false;
     }
 
-    public Flux<DocRepo> getMainFlux() {
+    public Flux<CodeUpdateResponse> getMainFlux() {
         return mainFlux;
     }
 }
