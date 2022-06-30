@@ -1,5 +1,6 @@
 package com.trio.livetracker.document;
 
+import com.mongodb.lang.NonNull;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -13,6 +14,8 @@ public class CodeUpdate {
     @Id
     private String url;
     private String keyWord;
+
+    @NonNull
     private LocalDateTime timeCreated = LocalDateTime.now();
     @Builder(toBuilder = true)
     private CodeUpdate(String url, String keyWord) {

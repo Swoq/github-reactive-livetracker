@@ -34,7 +34,7 @@ public class MainController {
     }
 
     @GetMapping(value = "/topfive/{keyword}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> findTopFive(@PathVariable String keyword) throws ParseException {
+    public Flux<String> findTopFive(@PathVariable String keyword) {
         return eventService.findTopFiveInDay(keyword).log("Top5").map(RepoCountAnalytic::toString);
     }
 
