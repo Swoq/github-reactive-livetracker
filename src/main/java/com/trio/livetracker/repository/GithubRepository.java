@@ -12,5 +12,5 @@ import java.util.List;
 @Repository
 public interface GithubRepository extends ReactiveMongoRepository<DocRepo, String> {
     @Query("{'codeUpdates._id' : ?0 }")
-    Mono<DocRepo> findByCodeUpdateId(String codeUpdate);
+    Mono<DocRepo> findByCodeUpdateId(String codeUpdateId);
 }

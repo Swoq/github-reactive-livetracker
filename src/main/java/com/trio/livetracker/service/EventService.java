@@ -2,8 +2,8 @@ package com.trio.livetracker.service;
 
 import com.trio.livetracker.document.CodeUpdate;
 import com.trio.livetracker.document.DocRepo;
-import com.trio.livetracker.document.LanguagesAnalytic;
 import com.trio.livetracker.document.RepoCountAnalytic;
+import com.trio.livetracker.dto.response.CodeUpdateResponse;
 import com.trio.livetracker.pipeline.MainPipeline;
 import com.trio.livetracker.repository.AnalyticRepository;
 import com.trio.livetracker.repository.GithubRepository;
@@ -29,17 +29,17 @@ public class EventService {
     private final AnalyticRepository analyticRepository;
     private final MainPipeline mainPipeline;
 
-    public Mono<DocRepo> doSomething() {
+    /*public Mono<DocRepo> doSomething() {
         CodeUpdate codeUpdate1 = new CodeUpdate("1", "keyword1",  LocalDateTime.now());
         CodeUpdate codeUpdate2 = new CodeUpdate("2", "keyword2",  LocalDateTime.now());
         CodeUpdate codeUpdate3 = new CodeUpdate("3", "keyword3",  LocalDateTime.now());
         DocRepo docRepo = new DocRepo("впы", List.of(codeUpdate1, codeUpdate2, codeUpdate3),List.of("java"));
         return githubRepository.save(docRepo);
-    }
+    }*/
 
-    public Flux<CodeUpdate> getUpdates(String keyWord) {
+    public Flux<CodeUpdateResponse> getUpdates(String keyWord) {
         mainPipeline.addKeyWord(keyWord);
-        return mainPipeline.getMainFlux().filter(d -> d.getKeyWord().equals(keyWord));
+        return mainPipeline.getMainFlux().filter(d -> d.getCodeUpdate().getKeyWord().equals(keyWord));
     }
 
     public Flux<DocRepo> findAll() {

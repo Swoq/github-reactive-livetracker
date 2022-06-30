@@ -1,14 +1,16 @@
 package com.trio.livetracker.pipeline;
 
+import com.trio.livetracker.document.CodeUpdate;
 import com.trio.livetracker.document.DocRepo;
 import com.trio.livetracker.dto.response.CodeUpdateResponse;
 import com.trio.livetracker.dto.search.Item;
-import com.trio.livetracker.request.SearchRequest;
-import com.trio.livetracker.document.CodeUpdate;
 import com.trio.livetracker.repository.GithubRepository;
+import com.trio.livetracker.request.SearchRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.util.Pair;
+import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Level;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.BufferOverflowStrategy;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -18,56 +20,57 @@ import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
 
 import javax.annotation.PostConstruct;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
 @RequiredArgsConstructor
 @Component
+@Log4j2
 public class MainPipeline {
     private final GithubRepository githubRepository;
     private final SearchRequest searchRequest;
-    private Sinks.Many<String> keyWordSink;
     private Flux<CodeUpdateResponse> mainFlux;
     private List<String> keyWordsSet;
 
     @PostConstruct
     private void postConstruct() {
         keyWordsSet = new ArrayList<>();
-        keyWordSink = Sinks.many().multicast().onBackpressureBuffer(10);
         mainFlux = createPipeline();
     }
 
     private Flux<CodeUpdateResponse> createPipeline() {
-        Scheduler schedulers = createWorker();
+        Sinks.Many<String> keyWordSink = Sinks.many().multicast().onBackpressureBuffer(10);
+        Sinks.Many<Integer> endedSink = Sinks.many().multicast().onBackpressureBuffer(10);
+        endedSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST);
+
+        Scheduler schedulers = createWorker(keyWordSink);
 
         return keyWordSink.asFlux()
-                .log("Something from sink")
-                .delayElements(Duration.ofSeconds(10))
-                .flatMap(key -> {
-                            return searchRequest.searchLanguages(key)
-                                    .flatMapMany(searchRoot -> Flux.fromIterable(searchRoot.getItems()))
-                                    .concatMap(item -> Mono.just(item)
-                                            .zipWith(githubRepository.findByCodeUpdateId(item.getUrl()).defaultIfEmpty(new DocRepo())))
-                                    .takeWhile(data -> {
-                                        System.out.println(data.getT2());
-                                        return data.getT2().getFullName() == null;
-                                    })
-                                    .flatMap(tuple -> combineData(tuple.getT1()))
-                                    .map(d -> processData(key, d))
-                                    .flatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1));
-                        }
-                )
-
+                .onBackpressureBuffer(1000, BufferOverflowStrategy.DROP_OLDEST)
+                .delayUntil(__ -> endedSink.asFlux().next())
+                .log("After retry")
+                .flatMap(key -> getCodeUpdatesByKey(key, endedSink))
                 .publishOn(schedulers)
                 .publish()
                 .autoConnect();
     }
 
-    private Scheduler createWorker() {
+    private Flux<CodeUpdateResponse> getCodeUpdatesByKey(String key, Sinks.Many<Integer> endedSink) {
+        return searchRequest.searchLanguages(key)
+                .flatMapMany(searchRoot -> {
+                    endedSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST);
+                    return Flux.fromIterable(searchRoot.getItems());
+                })
+                .concatMap(this::findCodeUpdate)
+                .takeWhile(data -> data.getT2().getFullName() == null)
+                .log("Item received after taking")
+                .flatMap(tuple -> combineData(tuple.getT1()))
+                .map(d -> processData(key, d))
+                .flatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1));
+    }
+
+    private Scheduler createWorker(Sinks.Many<String> keyWordSink) {
         Scheduler schedulers = Schedulers.single();
         final int[] currKey = {0};
         schedulers.createWorker()
@@ -77,9 +80,16 @@ public class MainPipeline {
                         currKey[0]++;
                         if (currKey[0] == keyWordsSet.size())
                             currKey[0] = 0;
+                        log.log(Level.INFO, "Emit sent");
                     }
                 }, 1, 10, TimeUnit.SECONDS);
         return schedulers;
+    }
+
+    private Mono<Tuple2<Item, DocRepo>> findCodeUpdate(Item item) {
+        return Mono.just(item)
+                .zipWith(githubRepository.findByCodeUpdateId(item.getUrl())
+                        .defaultIfEmpty(new DocRepo()));
     }
 
     private Mono<Tuple3<Item, List<String>, DocRepo>> combineData(Item codeUpdateItem) {
