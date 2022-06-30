@@ -18,11 +18,12 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
-import reactor.util.retry.Retry;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -32,11 +33,12 @@ public class MainPipeline {
     private final GithubRepository githubRepository;
     private final SearchRequest searchRequest;
     private Flux<CodeUpdateResponse> mainFlux;
-    private List<String> keyWordsSet;
+    private Set<String> keyWordSet;
 
     @PostConstruct
     private void postConstruct() {
-        keyWordsSet = new ArrayList<>();
+        Set<String> set = new LinkedHashSet<>();
+        keyWordSet = new LinkedHashSet<>();
         mainFlux = createPipeline();
     }
 
@@ -82,10 +84,10 @@ public class MainPipeline {
         final int[] currKey = {0};
         schedulers.createWorker()
                 .schedulePeriodically(() -> {
-                    if (keyWordsSet.size() > 0) {
-                        keyWordSink.emitNext(keyWordsSet.get(currKey[0]), Sinks.EmitFailureHandler.FAIL_FAST);
+                    if (keyWordSet.size() > 0) {
+                        keyWordSink.emitNext(keyWordSet.stream().toList().get(currKey[0]), Sinks.EmitFailureHandler.FAIL_FAST);
                         currKey[0]++;
-                        if (currKey[0] == keyWordsSet.size())
+                        if (currKey[0] == keyWordSet.size())
                             currKey[0] = 0;
                         log.log(Level.INFO, "Emit sent");
                     }
@@ -157,8 +159,8 @@ public class MainPipeline {
     }
 
     public boolean addKeyWord(String keyWord) {
-        if (!keyWordsSet.contains(keyWord))
-            return keyWordsSet.add(keyWord);
+        if (!keyWordSet.contains(keyWord))
+            return keyWordSet.add(keyWord);
         return false;
     }
 

@@ -31,7 +31,7 @@ import java.util.function.Function;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(classes = MainPipeline.class)
-@Log4j2
+//TODO Fix tests(are failing now)
 public class MainPipelineTests {
     @MockBean
     private GithubRepository githubRepository;
