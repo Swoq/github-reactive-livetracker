@@ -28,36 +28,36 @@ public class AnalyticRepositoryTest {
     List<DocRepo> testList = List.of(
             DocRepo.builder()
                     .codeUpdates(List.of(
-                            CodeUpdate.builder().keyWord("keyword1").url("1").timeCreated(LocalDateTime.now()).build(),
-                            CodeUpdate.builder().keyWord("keyword1").url("2").timeCreated(LocalDateTime.now()).build(),
-                            CodeUpdate.builder().keyWord("keyword1").url("3").timeCreated(LocalDateTime.now()).build()
+                            CodeUpdate.builder().keyWord("keyword1").url("1").build(),
+                            CodeUpdate.builder().keyWord("keyword1").url("2").build(),
+                            CodeUpdate.builder().keyWord("keyword1").url("3").build()
                     ))
                     .fullName("mustBeFirst")
                     .languages(List.of("java", "C++", "Python"))
                     .build(),
             DocRepo.builder()
                     .codeUpdates(List.of(
-                            CodeUpdate.builder().keyWord("keyword1").url("1").timeCreated(LocalDateTime.now()).build(),
-                            CodeUpdate.builder().keyWord("keyword1").url("2").timeCreated(LocalDateTime.now()).build(),
-                            CodeUpdate.builder().keyWord("keyword2").url("3").timeCreated(LocalDateTime.now()).build()
+                            CodeUpdate.builder().keyWord("keyword1").url("1").build(),
+                            CodeUpdate.builder().keyWord("keyword1").url("2").build(),
+                            CodeUpdate.builder().keyWord("keyword2").url("3").build()
                     ))
                     .fullName("mustBeSecond")
                     .languages(List.of("C++", "Python"))
                     .build(),
             DocRepo.builder()
                     .codeUpdates(List.of(
-                            CodeUpdate.builder().keyWord("keyword1").url("1").timeCreated(LocalDateTime.now()).build(),
-                            CodeUpdate.builder().keyWord("keyword2").url("2").timeCreated(LocalDateTime.now()).build(),
-                            CodeUpdate.builder().keyWord("keyword2").url("3").timeCreated(LocalDateTime.now()).build()
+                            CodeUpdate.builder().keyWord("keyword1").url("1").build(),
+                            CodeUpdate.builder().keyWord("keyword2").url("2").build(),
+                            CodeUpdate.builder().keyWord("keyword2").url("3").build()
                     ))
                     .fullName("mustBeThird")
                     .languages(List.of("C++"))
                     .build(),
             DocRepo.builder()
                     .codeUpdates(List.of(
-                            CodeUpdate.builder().keyWord("keyword2").url("1").timeCreated(LocalDateTime.now()).build(),
-                            CodeUpdate.builder().keyWord("keyword2").url("2").timeCreated(LocalDateTime.now()).build(),
-                            CodeUpdate.builder().keyWord("keyword2").url("3").timeCreated(LocalDateTime.now()).build()
+                            CodeUpdate.builder().keyWord("keyword2").url("1").build(),
+                            CodeUpdate.builder().keyWord("keyword2").url("2").build(),
+                            CodeUpdate.builder().keyWord("keyword2").url("3").build()
                     ))
                     .fullName("mustNotBe")
                     .languages(List.of("C++"))
