@@ -65,9 +65,9 @@ public class MainPipeline {
                 .concatMap(this::findCodeUpdate)
                 .takeWhile(data -> data.getT2().getFullName() == null)
                 .log("Item received after taking")
-                .flatMap(tuple -> combineData(tuple.getT1()))
+                .concatMap(tuple -> combineData(tuple.getT1()))
                 .map(d -> processData(key, d))
-                .flatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1));
+                .concatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1));
     }
 
     private Scheduler createWorker(Sinks.Many<String> keyWordSink) {
