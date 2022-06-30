@@ -3,6 +3,7 @@ package com.trio.livetracker.controller;
 import com.trio.livetracker.document.CodeUpdate;
 import com.trio.livetracker.document.DocRepo;
 import com.trio.livetracker.document.RepoCountAnalytic;
+import com.trio.livetracker.dto.response.CodeUpdateResponse;
 import com.trio.livetracker.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -29,11 +30,11 @@ public class MainController {
 
     @GetMapping(value = "/updates/stream/{keyWord}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> something(@PathVariable String keyWord) {
-        return eventService.getUpdates(keyWord).log("Coming on controller").map(CodeUpdate::toString);
+        return eventService.getUpdates(keyWord).log("Coming on controller").map(CodeUpdateResponse::toString);
     }
 
     @GetMapping(value = "/topfive/{keyword}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> findTopFive(@PathVariable String keyword) throws ParseException {
+    public Flux<String> findTopFive(@PathVariable String keyword) {
         return eventService.findTopFiveInDay(keyword).log("Top5").map(RepoCountAnalytic::toString);
     }
 

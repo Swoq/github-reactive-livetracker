@@ -18,10 +18,11 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.projectlombok:lombok:1.18.22'
-    implementation 'junit:junit:4.13.1'
+	implementation 'org.projectlombok:lombok:1.18.24'
+    implementation 'junit:junit:4.13.2'
     compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.4.6'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
 }

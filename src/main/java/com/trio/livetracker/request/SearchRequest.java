@@ -13,6 +13,7 @@ import reactor.util.retry.Retry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -44,8 +45,6 @@ public class SearchRequest {
                 .bodyToMono(Map.class)
                 .retryWhen(Retry.backoff(2, Duration.ofMinutes(1))
                         .maxBackoff(Duration.ofMinutes(2)))
-                .map(map -> (List<String>) map.keySet()
-                        .stream()
-                        .toList());
+                .map(map -> (List<String>) map.keySet().stream().collect(Collectors.toList()));
     }
 }
