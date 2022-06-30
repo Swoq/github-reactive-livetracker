@@ -20,6 +20,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'org.projectlombok:lombok:1.18.22'
     implementation 'junit:junit:4.13.1'
+	testImplementation 'org.mockito:mockito-inline:{mockitoversion}'
+	testImplementation 'org.mockito:mockito-junit-jupiter:{mockitoversion}'
     compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'

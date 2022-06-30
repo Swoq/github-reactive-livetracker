@@ -22,7 +22,7 @@ public class SearchRequest {
     @Value("${github.api.url}")
     private String baseUrl;
 
-    public Mono<SearchRoot> searchLanguages(String keyword) {
+    public Mono<SearchRoot> searchCodeUpdates(String keyword) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/search/code")
                         .queryParam("q", keyword)
@@ -36,7 +36,7 @@ public class SearchRequest {
                 .doOnTerminate(() -> log.log(Level.INFO, "Terminated"));
     }
 
-    public Mono<List<String>> searchRepo(String repoLink) {
+    public Mono<List<String>> searchLanguages(String repoLink) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder.path(repoLink.replace(baseUrl, ""))
                         .build())

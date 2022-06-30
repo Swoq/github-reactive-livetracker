@@ -57,17 +57,18 @@ public class MainPipeline {
     }
 
     private Flux<CodeUpdateResponse> getCodeUpdatesByKey(String key, Sinks.Many<Integer> endedSink) {
-        return searchRequest.searchLanguages(key)
+        return searchRequest.searchCodeUpdates(key)
                 .flatMapMany(searchRoot -> {
                     endedSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST);
                     return Flux.fromIterable(searchRoot.getItems());
                 })
-                .concatMap(this::findCodeUpdate)
+                .flatMapSequential(this::findCodeUpdate)
                 .takeWhile(data -> data.getT2().getFullName() == null)
                 .log("Item received after taking")
                 .concatMap(tuple -> combineData(tuple.getT1()))
                 .map(d -> processData(key, d))
-                .concatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1));
+                .concatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1))
+                .doOnComplete(()->log.log(Level.INFO,"Does it work as expected"));
     }
 
     private Scheduler createWorker(Sinks.Many<String> keyWordSink) {
@@ -94,7 +95,7 @@ public class MainPipeline {
 
     private Mono<Tuple3<Item, List<String>, DocRepo>> combineData(Item codeUpdateItem) {
         return Mono.zip(Mono.just(codeUpdateItem),
-                searchRequest.searchRepo(codeUpdateItem.getRepository().getLanguages_url()),
+                searchRequest.searchLanguages(codeUpdateItem.getRepository().getLanguages_url()),
                 githubRepository.findById(codeUpdateItem.getRepository().getFull_name())
                         .defaultIfEmpty(new DocRepo()));
     }
