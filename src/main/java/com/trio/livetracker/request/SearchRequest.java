@@ -33,6 +33,8 @@ public class SearchRequest {
                 .retrieve()
                 .bodyToMono(SearchRoot.class)
                 .retryWhen(Retry.backoff(2, Duration.ofMinutes(1))
+                        .doBeforeRetry(retrySignal -> log.log(Level.INFO, "Trying to retry for the " + retrySignal.totalRetries()
+                                + "time. Exception is: " + retrySignal.failure().getMessage()))
                         .maxBackoff(Duration.ofMinutes(2)))
                 .doOnTerminate(() -> log.log(Level.INFO, "Terminated"));
     }

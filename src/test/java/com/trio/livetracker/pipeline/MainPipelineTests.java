@@ -1,16 +1,22 @@
 package com.trio.livetracker.pipeline;
 
+import com.trio.livetracker.document.CodeUpdate;
 import com.trio.livetracker.document.DocRepo;
 import com.trio.livetracker.dto.search.Item;
 import com.trio.livetracker.dto.search.Repository;
 import com.trio.livetracker.dto.search.SearchRoot;
 import com.trio.livetracker.repository.GithubRepository;
 import com.trio.livetracker.request.SearchRequest;
+import lombok.extern.log4j.Log4j2;
+import org.apache.logging.log4j.Level;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -24,18 +30,19 @@ import java.util.function.Function;
 
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest(classes = MainPipeline.class)
+@Log4j2
 public class MainPipelineTests {
-    @Mock
+    @MockBean
     private GithubRepository githubRepository;
-    @Mock
+    @MockBean
     private SearchRequest searchRequest;
-    @InjectMocks
+    @Autowired
     private MainPipeline mainPipeline;
 
     @Test
     void testThatCodeUpdateIsNotDuplicated() {
-        when(searchRequest.searchLanguages(anyString()).thenReturn(Mono.just(List.of())));
+        when(searchRequest.searchLanguages(anyString())).thenReturn(Mono.just(List.of()));
 
         ArrayList<Item> items = new ArrayList<>();
         List<String> elemNames = List.of("Delayed saving", "Not delayed saving 1", "Not delayed saving 2");
@@ -79,13 +86,15 @@ public class MainPipelineTests {
 
         DocRepo defaultDocRepo = DocRepo.builder()
                 .fullName("default")
+                .codeUpdates(List.of(CodeUpdate.builder().url("dfsfg").build()))
                 .build();
 
-        when(searchRequest.searchCodeUpdates(anyString()).thenReturn(searchRoot));
+        when(searchRequest.searchCodeUpdates(anyString())).thenReturn(Mono.just(searchRoot));
 
         when(githubRepository.findByCodeUpdateId(anyString()))
                 .thenAnswer(invocationOnMock -> {
                     boolean isSaved = isSavedCodeUpdate.get(invocationOnMock.getArgument(0));
+
                     return isSaved ? Mono.just(defaultDocRepo) : Mono.empty();
                 });
 
@@ -103,7 +112,8 @@ public class MainPipelineTests {
                 });
 
         mainPipeline.addKeyWord("gachi");
-        StepVerifier.create(mainPipeline.getMainFlux().map(resp->resp.getCodeUpdate().getUrl()))
+        StepVerifier.create(mainPipeline.getMainFlux().take(6).map(resp -> resp.getCodeUpdate().getUrl())
+                        .log("Returned on controller"))
                 .expectNext("Delayed saving", "Not delayed saving 1", "Not delayed saving 2")
                 .verifyComplete();
     }

@@ -18,6 +18,7 @@ import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuple3;
+import reactor.util.retry.Retry;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
@@ -41,34 +42,39 @@ public class MainPipeline {
 
     private Flux<CodeUpdateResponse> createPipeline() {
         Sinks.Many<String> keyWordSink = Sinks.many().multicast().onBackpressureBuffer(10);
-        Sinks.Many<Integer> endedSink = Sinks.many().multicast().onBackpressureBuffer(10);
-        endedSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST);
+        Sinks.Many<Integer> searchEndedSink = Sinks.many().multicast().onBackpressureBuffer(10);
+        Sinks.Many<Integer> endSavingSink = Sinks.many().multicast().onBackpressureBuffer(10);
+        searchEndedSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST);
+        endSavingSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST);
 
         Scheduler schedulers = createWorker(keyWordSink);
 
         return keyWordSink.asFlux()
                 .onBackpressureBuffer(1000, BufferOverflowStrategy.DROP_OLDEST)
-                .delayUntil(__ -> endedSink.asFlux().next())
-                .log("After retry")
-                .flatMap(key -> getCodeUpdatesByKey(key, endedSink))
+                .delayUntil(__ -> searchEndedSink.asFlux().next())
+                .flatMapSequential(key -> getCodeUpdatesByKey(key, searchEndedSink, endSavingSink))
                 .publishOn(schedulers)
                 .publish()
                 .autoConnect();
     }
 
-    private Flux<CodeUpdateResponse> getCodeUpdatesByKey(String key, Sinks.Many<Integer> endedSink) {
+    private Flux<CodeUpdateResponse> getCodeUpdatesByKey(String key, Sinks.Many<Integer> searchEndedSink, Sinks.Many<Integer> endSavingSink) {
         return searchRequest.searchCodeUpdates(key)
                 .flatMapMany(searchRoot -> {
-                    endedSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST);
+                    searchEndedSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST);
                     return Flux.fromIterable(searchRoot.getItems());
                 })
+                .doOnError(err -> log.log(Level.INFO, "Error occurred when requested for code updates. Message is: " + err.getMessage()))
+                .onErrorStop()
+                .buffer(20)
+                .delayUntil(__ -> endSavingSink.asFlux().next())
+                .flatMapSequential(Flux::fromIterable)
                 .flatMapSequential(this::findCodeUpdate)
                 .takeWhile(data -> data.getT2().getFullName() == null)
-                .log("Item received after taking")
                 .concatMap(tuple -> combineData(tuple.getT1()))
                 .map(d -> processData(key, d))
                 .concatMap(responseWithSaved -> responseWithSaved.map(Tuple2::getT1))
-                .doOnComplete(()->log.log(Level.INFO,"Does it work as expected"));
+                .doOnComplete(() -> endSavingSink.emitNext(0, Sinks.EmitFailureHandler.FAIL_FAST));
     }
 
     private Scheduler createWorker(Sinks.Many<String> keyWordSink) {
@@ -83,7 +89,7 @@ public class MainPipeline {
                             currKey[0] = 0;
                         log.log(Level.INFO, "Emit sent");
                     }
-                }, 1, 10, TimeUnit.SECONDS);
+                }, 1, 30, TimeUnit.SECONDS);
         return schedulers;
     }
 
